@@ -1,0 +1,16 @@
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+Content/*
+!Content/VRTemplate/
+**/*_BuiltData.uasset
+Plugins/
+.idea/
+Config/steamvr_ue_editor_app.json
+Config/SteamVRBindings/
+Config/HoloLens/
+VRTemplate.sln
+VRTemplate.sln.DotSettings.user
+VRTemplate.uproject.DotSettings.user
