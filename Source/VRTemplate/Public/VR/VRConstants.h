@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 UENUM(BlueprintType)
-enum class EVRMovementMode
+enum class EVRMovementMode : uint8
 {
 	/* Movement is performed by teleporting a short distance. */
 	Blink,
