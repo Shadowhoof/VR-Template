@@ -3,9 +3,13 @@
 
 #include "Core/VRCharacter.h"
 
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "MotionControllerComponent.h"
 #include "Camera/CameraComponent.h"
+#include "VR/TeleportComponent.h"
+#include "Input/InputConfig.h"
 #include "VR/VRSettings.h"
 #include "VR/VRStatics.h"
 
@@ -24,21 +28,40 @@ AVRCharacter::AVRCharacter()
 	RightController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("RightController"));
 	RightController->SetTrackingSource(EControllerHand::Right);
 	RightController->SetupAttachment(RootComponent);
+
+	TeleportComponent = CreateDefaultSubobject<UTeleportComponent>(TEXT("TeleportComponent"));
+	TeleportComponent->SetupAttachment(RightController);
 }
 
 void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	DECLARE_DELEGATE_OneParam(FSnapTurnDelegate, float)
-	PlayerInputComponent->BindAction<FSnapTurnDelegate>("SnapTurnLeft", IE_Pressed, this, &AVRCharacter::SnapTurn, -1.f);
-	PlayerInputComponent->BindAction<FSnapTurnDelegate>("SnapTurnRight", IE_Pressed, this, &AVRCharacter::SnapTurn, 1.f);
+	if (!InputMappingContext)
+	{
+		UE_LOG(LogInput, Error, TEXT("InputMappingContext is not set up for the player"));
+		return;
+	}
 	
-	PlayerInputComponent->BindAxis("MoveForward", this, &AVRCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AVRCharacter::MoveRight);
+	if (!InputConfig)
+	{
+		UE_LOG(LogInput, Error, TEXT("InputConfig data asset is not set up for the player"));
+		return;
+	}
 
-	PlayerInputComponent->BindAxis("LookUp", this, &AVRCharacter::LookUp);
-	PlayerInputComponent->BindAxis("LookRight", this, &AVRCharacter::LookRight);
+	// add default mapping context
+	const APlayerController* PlayerController = GetController<APlayerController>();
+	PlayerController->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>()->AddMappingContext(InputMappingContext, 0);
+
+	// set actions up
+	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+	EnhancedInput->BindAction(InputConfig->Move, ETriggerEvent::Triggered, this, &AVRCharacter::Move);
+	EnhancedInput->BindAction(InputConfig->Look, ETriggerEvent::Triggered, this, &AVRCharacter::Look);
+	EnhancedInput->BindAction(InputConfig->SnapTurn, ETriggerEvent::Triggered, this, &AVRCharacter::SnapTurn);
+
+	EnhancedInput->BindAction(InputConfig->Teleport, ETriggerEvent::Started, this, &AVRCharacter::StartTeleport);
+	EnhancedInput->BindAction(InputConfig->Teleport, ETriggerEvent::Completed, this, &AVRCharacter::FinishTeleport);
+	EnhancedInput->BindAction(InputConfig->CancelTeleport, ETriggerEvent::Triggered, this, &AVRCharacter::CancelTeleport);
 }
 
 void AVRCharacter::BeginPlay()
@@ -49,31 +72,58 @@ void AVRCharacter::BeginPlay()
 	{
 		UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Floor);
 	}
+
+	TeleportComponent->SetArcFXSystem(TeleportFX);
 }
 
-void AVRCharacter::MoveForward(const float Value)
+void AVRCharacter::Move(const FInputActionInstance& Instance)
 {
-	AddMovementInput(GetMovementForwardVector(), Value);
+	if (UVRStatics::IsHMDActive() && MovementMode == EVRMovementMode::Blink)
+	{
+		return;
+	}
+	
+	const FVector2D Vector = Instance.GetValue().Get<FVector2D>();
+	AddMovementInput(GetMovementForwardVector(), Vector.X);
+	AddMovementInput(GetMovementRightVector(), Vector.Y);
 }
 
-void AVRCharacter::MoveRight(const float Value)
+void AVRCharacter::Look(const FInputActionInstance& Instance)
 {
-	AddMovementInput(GetMovementRightVector(), Value);
+	const FVector2D Vector = Instance.GetValue().Get<FVector2D>();
+	AddControllerPitchInput(Vector.Y);
+	AddControllerYawInput(Vector.X);
 }
 
-void AVRCharacter::LookUp(const float Value)
+void AVRCharacter::SnapTurn(const FInputActionInstance& Instance)
 {
-	AddControllerPitchInput(Value);
+	const float Value = FMath::Sign(Instance.GetValue().Get<float>()); 
+	AddControllerYawInput(Value * GetDefault<UVRSettings>()->SnapTurnAngle);
 }
 
-void AVRCharacter::LookRight(const float Value)
+void AVRCharacter::StartTeleport()
 {
-	AddControllerYawInput(Value);
+	if (MovementMode != EVRMovementMode::Blink)
+	{
+		return;
+	}
+	
+	TeleportComponent->StartTeleport();
 }
 
-void AVRCharacter::SnapTurn(const float Side)
+void AVRCharacter::FinishTeleport()
 {
-	AddControllerYawInput(Side * GetDefault<UVRSettings>()->SnapTurnAngle);
+	if (MovementMode != EVRMovementMode::Blink)
+	{
+		return;
+	}
+	
+	TeleportComponent->FinishTeleport();
+}
+
+void AVRCharacter::CancelTeleport()
+{
+	TeleportComponent->CancelTeleport();
 }
 
 FVector AVRCharacter::GetMovementForwardVector() const

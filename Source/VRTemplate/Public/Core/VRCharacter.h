@@ -3,12 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputAction.h"
 #include "GameFramework/Character.h"
 #include "VR/VRConstants.h"
 #include "VRCharacter.generated.h"
 
 class UMotionControllerComponent;
 class UCameraComponent;
+class UTeleportComponent;
+class UNiagaraSystem;
+class UInputConfig;
+struct FInputActionInstance;
 
 UCLASS()
 class VRTEMPLATE_API AVRCharacter : public ACharacter
@@ -31,20 +36,32 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VR")
 	TObjectPtr<UMotionControllerComponent> RightController;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Teleport")
+	TObjectPtr<UTeleportComponent> TeleportComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Teleport")
+	TObjectPtr<UNiagaraSystem> TeleportFX;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
 	EVRMovementMode MovementMode = EVRMovementMode::Blink;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> InputMappingContext;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputConfig> InputConfig;
 	
 protected:
 
 	virtual void BeginPlay() override;
-	
-	void MoveForward(const float Value);
-	void MoveRight(const float Value);
 
-	void LookUp(const float Value);
-	void LookRight(const float Value);
+	void Move(const FInputActionInstance& Instance);
+	void Look(const FInputActionInstance& Instance);
+	void SnapTurn(const FInputActionInstance& Instance);
 	
-	void SnapTurn(const float Side);
+	void StartTeleport();
+	void FinishTeleport();
+	void CancelTeleport();
 
 	FVector GetMovementForwardVector() const;
 	FVector GetMovementRightVector() const;
