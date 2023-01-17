@@ -12,6 +12,15 @@
 #include "Input/InputConfig.h"
 #include "VR/VRSettings.h"
 #include "VR/VRStatics.h"
+#include "VR/Hands/HandMeshComponent.h"
+
+namespace MotionSourceName
+{
+	static const FName Left = "Left"; 
+	static const FName Right = "Right"; 
+	static const FName LeftAim = "LeftAim"; 
+	static const FName RightAim = "RightAim"; 
+}
 
 AVRCharacter::AVRCharacter()
 {
@@ -22,15 +31,32 @@ AVRCharacter::AVRCharacter()
 	CameraComponent->SetupAttachment(RootComponent);
 	
 	LeftController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("LeftController"));
-	LeftController->SetTrackingSource(EControllerHand::Left);
+	LeftController->SetTrackingMotionSource(MotionSourceName::Left);
+	LeftController->bDisplayDeviceModel = false;
 	LeftController->SetupAttachment(RootComponent);
+
+	LeftHand = CreateDefaultSubobject<UHandMeshComponent>(TEXT("LeftHand"));
+	LeftHand->SetupAttachment(LeftController);
+	LeftHand->bIsMirrored = true;
+
+	LeftControllerAim = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("LeftControllerAim"));
+	LeftControllerAim->SetTrackingMotionSource(MotionSourceName::LeftAim);
+	LeftControllerAim->SetupAttachment(RootComponent);
 	
 	RightController = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("RightController"));
-	RightController->SetTrackingSource(EControllerHand::Right);
+	RightController->SetTrackingMotionSource(MotionSourceName::Right);
+	RightController->bDisplayDeviceModel = false;
 	RightController->SetupAttachment(RootComponent);
 
+	RightHand = CreateDefaultSubobject<UHandMeshComponent>(TEXT("RightHand"));
+	RightHand->SetupAttachment(RightController);
+
+	RightControllerAim = CreateDefaultSubobject<UMotionControllerComponent>(TEXT("RightControllerAim"));
+	RightControllerAim->SetTrackingMotionSource(MotionSourceName::RightAim);
+	RightControllerAim->SetupAttachment(RootComponent);
+	
 	TeleportComponent = CreateDefaultSubobject<UTeleportComponent>(TEXT("TeleportComponent"));
-	TeleportComponent->SetupAttachment(RightController);
+	TeleportComponent->SetupAttachment(RightControllerAim);
 }
 
 void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -51,7 +77,8 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 	// add default mapping context
 	const APlayerController* PlayerController = GetController<APlayerController>();
-	PlayerController->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>()->AddMappingContext(InputMappingContext, 0);
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = PlayerController->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+	InputSubsystem->AddMappingContext(InputMappingContext, 0);
 
 	// set actions up
 	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
@@ -62,6 +89,9 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	EnhancedInput->BindAction(InputConfig->Teleport, ETriggerEvent::Started, this, &AVRCharacter::StartTeleport);
 	EnhancedInput->BindAction(InputConfig->Teleport, ETriggerEvent::Completed, this, &AVRCharacter::FinishTeleport);
 	EnhancedInput->BindAction(InputConfig->CancelTeleport, ETriggerEvent::Triggered, this, &AVRCharacter::CancelTeleport);
+
+	LeftHand->SetupInput(EnhancedInput, InputConfig, InputSubsystem, EControllerHand::Left);
+	RightHand->SetupInput(EnhancedInput, InputConfig, InputSubsystem, EControllerHand::Right);
 }
 
 void AVRCharacter::BeginPlay()

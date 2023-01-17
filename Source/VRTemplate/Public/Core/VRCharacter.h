@@ -8,6 +8,7 @@
 #include "VR/VRConstants.h"
 #include "VRCharacter.generated.h"
 
+class UHandMeshComponent;
 class UMotionControllerComponent;
 class UCameraComponent;
 class UTeleportComponent;
@@ -30,12 +31,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> CameraComponent;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VR")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Controllers")
 	TObjectPtr<UMotionControllerComponent> LeftController;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VR")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Controllers")
+	TObjectPtr<UHandMeshComponent> LeftHand;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Controllers")
+	TObjectPtr<UMotionControllerComponent> LeftControllerAim;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Controllers")
 	TObjectPtr<UMotionControllerComponent> RightController;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Controllers")
+	TObjectPtr<UHandMeshComponent> RightHand;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Controllers")
+	TObjectPtr<UMotionControllerComponent> RightControllerAim;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Teleport")
 	TObjectPtr<UTeleportComponent> TeleportComponent;
 
