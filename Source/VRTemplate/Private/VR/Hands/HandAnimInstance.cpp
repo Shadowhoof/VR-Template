@@ -13,7 +13,6 @@ void UHandAnimInstance::SetHandAction(EHandAction Action, float Value)
 	switch(Action)
 	{
 	case EHandAction::Grasp:
-		UE_LOG(LogTemp, Log, TEXT("Set grasp value: %.2f, ID: %d"), Value, GetUniqueID());
 		Grasp = Value;
 		break;
 	case EHandAction::IndexCurl:

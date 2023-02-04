@@ -2,6 +2,9 @@
 
 #include "VRStatics.generated.h"
 
+class UVRGameUserSettings;
+
+
 UCLASS()
 class UVRStatics : public UBlueprintFunctionLibrary
 {
@@ -15,4 +18,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	static bool IsHMDActive();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, DisplayName = "Get VR User Settings")
+	static UVRGameUserSettings* GetVRUserSettings();
 };

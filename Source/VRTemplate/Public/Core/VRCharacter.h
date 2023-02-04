@@ -8,6 +8,7 @@
 #include "VR/VRConstants.h"
 #include "VRCharacter.generated.h"
 
+class UVRGameUserSettings;
 class UHandMeshComponent;
 class UMotionControllerComponent;
 class UCameraComponent;
@@ -25,6 +26,8 @@ public:
 	AVRCharacter();
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	
+	void OnUserSettingsChanged();
 
 protected:
 
@@ -63,6 +66,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputConfig> InputConfig;
+
+	UPROPERTY()
+	TObjectPtr<UVRGameUserSettings> GameUserSettings;
 	
 protected:
 

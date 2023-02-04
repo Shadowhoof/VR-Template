@@ -10,7 +10,7 @@
 #include "Camera/CameraComponent.h"
 #include "VR/TeleportComponent.h"
 #include "Input/InputConfig.h"
-#include "VR/VRSettings.h"
+#include "VR/VRGameUserSettings.h"
 #include "VR/VRStatics.h"
 #include "VR/Hands/HandMeshComponent.h"
 
@@ -94,10 +94,32 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	RightHand->SetupInput(EnhancedInput, InputConfig, InputSubsystem, EControllerHand::Right);
 }
 
+void AVRCharacter::OnUserSettingsChanged()
+{
+	if (MovementMode != GameUserSettings->GetVRMovementMode())
+	{
+		if (MovementMode == EVRMovementMode::Blink)
+		{
+			CancelTeleport();
+		}
+
+		MovementMode = GameUserSettings->GetVRMovementMode();
+	}
+}
+
 void AVRCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GameUserSettings = Cast<UVRGameUserSettings>(GEngine->GetGameUserSettings());
+	if (!GameUserSettings)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Game user settings is null"));
+		return;
+	}
+
+	MovementMode = GameUserSettings->GetVRMovementMode();
+	
 	if (UVRStatics::IsHMDActive())
 	{
 		UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Floor);
@@ -127,8 +149,8 @@ void AVRCharacter::Look(const FInputActionInstance& Instance)
 
 void AVRCharacter::SnapTurn(const FInputActionInstance& Instance)
 {
-	const float Value = FMath::Sign(Instance.GetValue().Get<float>()); 
-	AddControllerYawInput(Value * GetDefault<UVRSettings>()->SnapTurnAngle);
+	const float Value = FMath::Sign(Instance.GetValue().Get<float>());
+	AddControllerYawInput(Value * GameUserSettings->GetSnapTurnAngle());
 }
 
 void AVRCharacter::StartTeleport()
